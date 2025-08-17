@@ -1,15 +1,19 @@
 package com.solicare.monitor
 
 import android.util.Log
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 
 object FCMTokenManager {
     private const val TAG = "FCMTokenManager"
-    private const val SERVER_URL = "http://10.210.40.204:8080/fcm/register" // 엔드포인트 변경
+    private const val SERVER_URL = "http://api.solicare.kro.kr/fcm/register"
 
     private val client = OkHttpClient()
     private val JSON = "application/json; charset=utf-8".toMediaType()

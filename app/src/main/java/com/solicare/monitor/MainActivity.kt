@@ -2,7 +2,10 @@ package com.solicare.monitor
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.telephony.TelephonyManager
@@ -15,19 +18,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessaging
-import android.app.NotificationManager
-import android.app.NotificationChannel
-import android.content.Context
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import android.widget.EditText
-import android.text.InputType
 
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
-    private val baseUrl = "https://dev-www.solicare.kro.kr/"
+    private val baseUrl = "https://www.solicare.kro.kr/"
     private val CHANNEL_ID = "fcm_register_channel"
     private val PERMISSION_REQUEST_CODE = 123
 
@@ -60,7 +57,11 @@ class MainActivity : ComponentActivity() {
                 displayZoomControls = false
             }
             webViewClient = object : WebViewClient() {
-                override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                override fun onReceivedError(
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    error: WebResourceError?
+                ) {
                     super.onReceivedError(view, request, error)
                     // 에러 발생시 로그 출력
                     error?.let {
@@ -68,7 +69,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
                     request?.url?.let { view?.loadUrl(it.toString()) }
                     return true
                 }
@@ -107,7 +111,12 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.READ_PHONE_NUMBERS
         )
 
-        if (permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
+        if (permissions.all {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    it
+                ) == PackageManager.PERMISSION_GRANTED
+            }) {
             getPhoneNumberAndRegister()
         } else {
             requestPermissionLauncher.launch(permissions)
@@ -116,13 +125,18 @@ class MainActivity : ComponentActivity() {
 
     private fun getPhoneNumberAndRegister() {
         try {
-            val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
+            val telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_PHONE_NUMBERS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
                 val phoneNumber = telephonyManager.line1Number
                 if (!phoneNumber.isNullOrEmpty()) {
                     registerFCMToken(phoneNumber)
                 } else {
-                    val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+                    val deviceId =
+                        Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
                     showRegistrationResultNotification(false, "전화번호를 가져올 수 없습니다. 기기 ID를 사용합니다.")
                     registerFCMToken(deviceId)
                 }
@@ -135,7 +149,7 @@ class MainActivity : ComponentActivity() {
 
     private fun registerFCMToken(phoneNumber: String) {
         // 전화번호 저장
-        getSharedPreferences("FCMPrefs", Context.MODE_PRIVATE).edit().apply {
+        getSharedPreferences("FCMPrefs", MODE_PRIVATE).edit().apply {
             putString("phoneNumber", phoneNumber)
             apply()
         }
@@ -144,19 +158,22 @@ class MainActivity : ComponentActivity() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val token = task.result
-                    FCMTokenManager.sendTokenToServer(token, phoneNumber, object : FCMTokenManager.TokenRegistrationCallback {
-                        override fun onSuccess(message: String) {
-                            runOnUiThread {
-                                showRegistrationResultNotification(true, message)
+                    FCMTokenManager.sendTokenToServer(
+                        token,
+                        phoneNumber,
+                        object : FCMTokenManager.TokenRegistrationCallback {
+                            override fun onSuccess(message: String) {
+                                runOnUiThread {
+                                    showRegistrationResultNotification(true, message)
+                                }
                             }
-                        }
 
-                        override fun onFailure(error: String) {
-                            runOnUiThread {
-                                showRegistrationResultNotification(false, error)
+                            override fun onFailure(error: String) {
+                                runOnUiThread {
+                                    showRegistrationResultNotification(false, error)
+                                }
                             }
-                        }
-                    })
+                        })
                 } else {
                     showRegistrationResultNotification(false, "FCM 토큰 가져오기 실패")
                 }
