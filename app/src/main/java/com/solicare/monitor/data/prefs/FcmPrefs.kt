@@ -1,0 +1,25 @@
+package com.solicare.monitor.data.prefs
+
+import android.content.Context
+import androidx.core.content.edit
+
+class FcmPrefs(context: Context) {
+    private val prefs = context.getSharedPreferences("FCMPrefs", Context.MODE_PRIVATE)
+
+    fun saveFcmToken(token: String) {
+        prefs.edit { putString("fcm_token", token) }
+        saveRegistrationDate(System.currentTimeMillis())
+    }
+
+    fun getFcmToken(): String? = prefs.getString("fcm_token", null)
+
+    fun saveRegistrationDate(timestamp: Long) {
+        prefs.edit { putLong("registration_date", timestamp) }
+    }
+
+    fun getRegistrationDate(): Long = prefs.getLong("registration_date", 0L)
+
+    fun clear() {
+        prefs.edit { clear() }
+    }
+}
