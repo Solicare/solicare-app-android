@@ -1,4 +1,4 @@
-package com.solicare.monitor.permission
+package com.solicare.monitor.presentation.util
 
 import android.content.Context
 import android.content.pm.PackageManager

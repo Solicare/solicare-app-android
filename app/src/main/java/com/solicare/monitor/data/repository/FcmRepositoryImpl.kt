@@ -2,7 +2,7 @@ package com.solicare.monitor.data.repository
 
 import com.solicare.monitor.data.remote.HttpJsonHelper
 import com.solicare.monitor.domain.repository.FcmRepository
-import com.solicare.monitor.util.PhoneNumberUtils
+import com.solicare.monitor.domain.util.PhoneNumberUtils
 import org.json.JSONObject
 
 class FcmRepositoryImpl : FcmRepository {

@@ -27,7 +27,7 @@
         </service>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SolicareMonitor">
             <intent-filter>

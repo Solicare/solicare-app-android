@@ -1,30 +1,38 @@
-package com.solicare.monitor
+package com.solicare.monitor.presentation
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.addCallback
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.solicare.monitor.R
 import com.solicare.monitor.data.prefs.DevicePrefs
 import com.solicare.monitor.data.prefs.FcmPrefs
 import com.solicare.monitor.data.prefs.UserPrefs
-import com.solicare.monitor.permission.PermissionHelper
 import com.solicare.monitor.presentation.dialog.OneButtonDialog
 import com.solicare.monitor.presentation.dialog.TwoButtonDialog
+import com.solicare.monitor.presentation.util.PermissionHelper
 
 class MainActivity : AppCompatActivity() {
     private val baseUrl = "https://www.solicare.kro.kr/"
@@ -34,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var userPrefs: UserPrefs
     private lateinit var devicePrefs: DevicePrefs
     private lateinit var permissionHelper: PermissionHelper
-    private lateinit var settingsLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+    private lateinit var settingsLauncher: ActivityResultLauncher<Intent>
 
     private val requiredPermissions: Array<String> by lazy {
         val list = mutableListOf(
@@ -54,7 +62,7 @@ class MainActivity : AppCompatActivity() {
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (!areAllPermissionsGranted()) {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = android.net.Uri.fromParts("package", packageName, null)
+                        data = Uri.fromParts("package", packageName, null)
                     }
                     TwoButtonDialog(
                         this,
@@ -106,7 +114,7 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(
                 this,
                 it
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -117,14 +125,14 @@ class MainActivity : AppCompatActivity() {
         devicePrefs = DevicePrefs(this)
 
         webView = createConfiguredWebView()
-        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        webView.setBackgroundColor(Color.TRANSPARENT)
 
-        val container = android.widget.FrameLayout(this).apply {
+        val container = FrameLayout(this).apply {
             fitsSystemWindows = true
             addView(
-                webView, android.widget.FrameLayout.LayoutParams(
-                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                webView, FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
                 )
             )
         }
@@ -155,7 +163,7 @@ class MainActivity : AppCompatActivity() {
                 javaScriptEnabled = true
                 domStorageEnabled = true
                 loadsImagesAutomatically = true
-                mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                 useWideViewPort = true
                 loadWithOverviewMode = true
                 setSupportZoom(true)
@@ -193,15 +201,15 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(
                 this,
                 permission
-            ) != android.content.pm.PackageManager.PERMISSION_GRANTED &&
-                    !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
+            ) != PackageManager.PERMISSION_GRANTED &&
+                    !ActivityCompat.shouldShowRequestPermissionRationale(
                         this,
                         permission
                     )
         }
         if (permanentlyDenied) {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = android.net.Uri.fromParts("package", packageName, null)
+                data = Uri.fromParts("package", packageName, null)
             }
             TwoButtonDialog(
                 this,

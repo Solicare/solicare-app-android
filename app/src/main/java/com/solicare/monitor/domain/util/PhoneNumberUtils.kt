@@ -1,4 +1,4 @@
-package com.solicare.monitor.util
+package com.solicare.monitor.domain.util
 
 object PhoneNumberUtils {
     /**

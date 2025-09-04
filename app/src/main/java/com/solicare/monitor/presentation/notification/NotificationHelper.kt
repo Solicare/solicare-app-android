@@ -1,4 +1,4 @@
-package com.solicare.monitor.notification
+package com.solicare.monitor.presentation.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
