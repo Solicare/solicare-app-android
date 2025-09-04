@@ -1,0 +1,68 @@
+name: Build & Release APK
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m"
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Decode google-services.json from secret
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+
+      - name: Decode keystore from secret
+        run: |
+          echo "$SOLICARE_KEYSTORE_BASE64" | base64 -d > app/solicare-keystore.jks
+        env:
+          SOLICARE_KEYSTORE_BASE64: ${{ secrets.SOLICARE_KEYSTORE_BASE64 }}
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease -PkeystoreFile=solicare-keystore.jks -PkeystorePassword=$SOLICARE_KEYSTORE_PASSWORD -PkeyAlias=$SOLICARE_KEY_ALIAS -PkeyPassword=$SOLICARE_KEY_PASSWORD
+        env:
+          SOLICARE_KEYSTORE_PASSWORD: ${{ secrets.SOLICARE_KEYSTORE_PASSWORD }}
+          SOLICARE_KEY_ALIAS: ${{ secrets.SOLICARE_KEY_ALIAS }}
+          SOLICARE_KEY_PASSWORD: ${{ secrets.SOLICARE_KEY_PASSWORD }}
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find $GITHUB_WORKSPACE/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.find_apk.outputs.apk_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

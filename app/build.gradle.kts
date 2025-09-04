@@ -23,6 +23,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(
+                project.findProperty("keystoreFile") ?: System.getenv("SOLICARE_KEYSTORE_FILE")
+                ?: "solicare-keystore.jks"
+            )
+            storePassword = project.findProperty("keystorePassword") as String?
+                ?: System.getenv("SOLICARE_KEYSTORE_PASSWORD")
+            keyAlias =
+                project.findProperty("keyAlias") as String? ?: System.getenv("SOLICARE_KEY_ALIAS")
+            keyPassword = project.findProperty("keyPassword") as String?
+                ?: System.getenv("SOLICARE_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -30,6 +45,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
