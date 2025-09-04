@@ -65,6 +65,13 @@ android {
         }
     }
     buildToolsVersion = "36.0.0"
+
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "app-${buildType.name}-v${versionName}-${versionCode}.apk"
+        }
+    }
 }
 
 dependencies {
