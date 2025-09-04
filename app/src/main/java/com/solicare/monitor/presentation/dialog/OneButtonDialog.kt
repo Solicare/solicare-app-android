@@ -9,17 +9,20 @@ class OneButtonDialog(
     private val title: String,
     private val message: String,
     private val buttonText: String = context.getString(R.string.confirm),
-    private val onClick: (() -> Unit)? = null
+    private val onClick: (() -> Unit)? = null,
+    private val isCancelable: Boolean = true
 ) {
     fun show() {
-        AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(buttonText) { dialog, _ ->
                 dialog.dismiss()
                 onClick?.invoke()
             }
-            .show()
+            .create()
+        dialog.setCancelable(isCancelable)
+        dialog.setCanceledOnTouchOutside(isCancelable)
+        dialog.show()
     }
 }
-

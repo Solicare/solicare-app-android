@@ -11,10 +11,11 @@ class TwoButtonDialog(
     private val positiveText: String = context.getString(R.string.confirm),
     private val negativeText: String = context.getString(R.string.cancel),
     private val onPositive: (() -> Unit)? = null,
-    private val onNegative: (() -> Unit)? = null
+    private val onNegative: (() -> Unit)? = null,
+    private val isCancelable: Boolean = true
 ) {
     fun show() {
-        AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(positiveText) { dialog, _ ->
@@ -25,7 +26,9 @@ class TwoButtonDialog(
                 dialog.dismiss()
                 onNegative?.invoke()
             }
-            .show()
+            .create()
+        dialog.setCancelable(isCancelable)
+        dialog.setCanceledOnTouchOutside(isCancelable)
+        dialog.show()
     }
 }
-

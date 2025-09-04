@@ -12,25 +12,31 @@ class PermissionHelper(
     private val onGranted: () -> Unit,
     private val onDenied: () -> Unit
 ) {
+    private var lastDeniedPermissions: List<String> = emptyList()
+
     fun checkAndRequestPermissions() {
-        if (permissions.all {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    it
-                ) == PackageManager.PERMISSION_GRANTED
-            }) {
+        val notGranted = permissions.filter {
+            ContextCompat.checkSelfPermission(
+                context,
+                it
+            ) != PackageManager.PERMISSION_GRANTED
+        }
+        if (notGranted.isEmpty()) {
             onGranted()
         } else {
-            launcher.launch(permissions)
+            launcher.launch(notGranted.toTypedArray())
         }
     }
 
     fun handleResult(result: Map<String, Boolean>) {
-        if (result.all { it.value }) {
+        val denied = result.filter { !it.value }.map { it.key }
+        lastDeniedPermissions = denied
+        if (denied.isEmpty()) {
             onGranted()
         } else {
             onDenied()
         }
     }
-}
 
+    fun getLastDeniedPermissions(): List<String> = lastDeniedPermissions
+}

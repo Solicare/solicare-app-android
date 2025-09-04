@@ -9,7 +9,8 @@ class MessageDialog(
     private val context: Context,
     private val title: String,
     private val message: String,
-    private val durationMillis: Long = 1500L // 자동 닫힘 시간 (기본 1.5초)
+    private val durationMillis: Long = 1500L, // 자동 닫힘 시간 (기본 1.5초)
+    private val isAutoDismiss: Boolean = true // 자동 닫힘 여부
 ) {
     fun show() {
         val dialog = AlertDialog.Builder(context)
@@ -17,9 +18,10 @@ class MessageDialog(
             .setMessage(message)
             .create()
         dialog.show()
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (dialog.isShowing) dialog.dismiss()
-        }, durationMillis)
+        if (isAutoDismiss) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (dialog.isShowing) dialog.dismiss()
+            }, durationMillis)
+        }
     }
 }
-
