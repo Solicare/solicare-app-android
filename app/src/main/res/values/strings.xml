@@ -12,4 +12,18 @@
     <string name="permission_required_settings_button">설정으로 이동</string>
     <string name="permission_required_retry_message">앱 사용을 위해 권한이 필요합니다.</string>
     <string name="permission_required_retry_button">다시 시도</string>
+    <string name="info_channel_name">일반 알림</string>
+    <string name="info_channel_desc">일반 알림을 위한 채널입니다.</string>
+    <string name="alert_channel_name">경고 알림</string>
+    <string name="alert_channel_desc">중요/경고 알림을 위한 채널입니다.</string>
+    <string name="fcm_token_changed_title">FCM 토큰 변경</string>
+    <string name="fcm_token_changed_message">새로운 FCM 토큰을 수신하였습니다.</string>
+    <string name="fcm_message_received_title">새로운 FCM 메시지를 수신하였습니다.</string>
+    <string name="fcm_message_received_message">새로운 FCM 메시지를 수신하였습니다.</string>
+    <string name="device_register_title">디바이스 등록 요청 결과</string>
+    <string name="device_register_success">디바이스 등록 요청에 성공했습니다.</string>
+    <string name="device_register_fail">디바이스 등록 요청에 실패했습니다.</string>
+    <string name="device_unregister_title">등록 해제 요청 결과</string>
+    <string name="device_unregister_success">디바이스 등록 해제 요청에 성공했습니다.</string>
+    <string name="device_unregister_fail">디바이스 등록 해제 요청에 실패했습니다.</string>
 </resources>

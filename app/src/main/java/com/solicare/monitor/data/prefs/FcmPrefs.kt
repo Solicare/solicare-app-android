@@ -22,4 +22,10 @@ class FcmPrefs(context: Context) {
     fun clear() {
         prefs.edit { clear() }
     }
+
+    fun saveLastRegisteredToken(token: String) {
+        prefs.edit { putString("last_registered_token", token) }
+    }
+
+    fun getLastRegisteredToken(): String? = prefs.getString("last_registered_token", null)
 }

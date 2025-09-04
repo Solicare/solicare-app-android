@@ -8,17 +8,29 @@ import org.json.JSONObject
 
 object HttpJsonHelper {
     private val client = OkHttpClient()
+    private val JSON = "application/json; charset=utf-8".toMediaType()
 
-    fun postJsonWithoutAuth(url: String, body: JSONObject): JSONObject? {
+    private fun requestJson(
+        url: String,
+        method: String,
+        body: JSONObject? = null,
+        jwtToken: String? = null
+    ): JSONObject? {
         return try {
-            val requestBody =
-                body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
-            val request = Request.Builder()
+            val builder = Request.Builder()
                 .url(url)
-                .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
-                .post(requestBody)
-                .build()
+            if (jwtToken != null) {
+                builder.addHeader("Authorization", "Bearer $jwtToken")
+            }
+            // 항상 Content-Type: application/json 헤더 추가
+            builder.addHeader("Content-Type", "application/json")
+            val requestBody = when (method) {
+                "POST", "PUT", "DELETE" -> (body?.toString() ?: "{}").toRequestBody(JSON)
+                else -> null
+            }
+            builder.method(method, requestBody)
+            val request = builder.build()
             val response = client.newCall(request).execute()
             response.body?.string()?.let { JSONObject(it) }
         } catch (e: Exception) {
@@ -26,69 +38,24 @@ object HttpJsonHelper {
         }
     }
 
-    fun postJsonWithAuth(url: String, body: JSONObject, jwtToken: String): JSONObject? {
-        return try {
-            val requestBody =
-                body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Bearer $jwtToken")
-                .post(requestBody)
-                .build()
-            val response = client.newCall(request).execute()
-            response.body?.string()?.let { JSONObject(it) }
-        } catch (e: Exception) {
-            null
-        }
-    }
+    fun postJsonWithoutAuth(url: String, body: JSONObject): JSONObject? =
+        requestJson(url, "POST", body)
 
-    fun getJsonWithAuth(url: String, jwtToken: String): JSONObject? {
-        return try {
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Bearer $jwtToken")
-                .get()
-                .build()
-            val response = client.newCall(request).execute()
-            response.body?.string()?.let { JSONObject(it) }
-        } catch (e: Exception) {
-            null
-        }
-    }
+    fun postJsonWithAuth(url: String, body: JSONObject, jwtToken: String): JSONObject? =
+        requestJson(url, "POST", body, jwtToken)
 
-    fun putJsonWithAuth(url: String, body: JSONObject, jwtToken: String): JSONObject? {
-        return try {
-            val requestBody =
-                body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Bearer $jwtToken")
-                .put(requestBody)
-                .build()
-            val response = client.newCall(request).execute()
-            response.body?.string()?.let { JSONObject(it) }
-        } catch (e: Exception) {
-            null
-        }
-    }
+    fun getJsonWithAuth(url: String, jwtToken: String): JSONObject? =
+        requestJson(url, "GET", null, jwtToken)
 
-    fun deleteJsonWithAuth(url: String, jwtToken: String): JSONObject? {
-        return try {
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Bearer $jwtToken")
-                .delete()
-                .build()
-            val response = client.newCall(request).execute()
-            response.body?.string()?.let { JSONObject(it) }
-        } catch (e: Exception) {
-            null
-        }
-    }
+    fun putJsonWithAuth(url: String, body: JSONObject, jwtToken: String): JSONObject? =
+        requestJson(url, "PUT", body, jwtToken)
+
+    fun deleteJsonWithAuth(url: String, jwtToken: String): JSONObject? =
+        requestJson(url, "DELETE", null, jwtToken)
+
+    fun putJsonWithoutAuth(url: String, body: JSONObject?): JSONObject? =
+        requestJson(url, "PUT", body)
+
+    fun deleteJsonWithoutAuth(url: String): JSONObject? =
+        requestJson(url, "DELETE")
 }

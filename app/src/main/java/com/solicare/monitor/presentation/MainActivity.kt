@@ -30,9 +30,15 @@ import com.solicare.monitor.R
 import com.solicare.monitor.data.prefs.DevicePrefs
 import com.solicare.monitor.data.prefs.FcmPrefs
 import com.solicare.monitor.data.prefs.UserPrefs
+import com.solicare.monitor.data.repository.DeviceRepositoryImpl
 import com.solicare.monitor.presentation.dialog.OneButtonDialog
 import com.solicare.monitor.presentation.dialog.TwoButtonDialog
+import com.solicare.monitor.presentation.notification.AlertChannel
+import com.solicare.monitor.presentation.notification.InfoChannel
 import com.solicare.monitor.presentation.util.PermissionHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val baseUrl = "https://www.solicare.kro.kr/"
@@ -58,6 +64,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        InfoChannel.register(this)
+        AlertChannel.register(this)
         settingsLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (!areAllPermissionsGranted()) {
@@ -123,6 +131,31 @@ class MainActivity : AppCompatActivity() {
         fcmPrefs = FcmPrefs(this)
         userPrefs = UserPrefs(this)
         devicePrefs = DevicePrefs(this)
+
+        // FCM 토큰 서버 등록 로직
+        val fcmToken = fcmPrefs.getFcmToken()
+        val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
+        Log.d("MainActivity", "FCM Token: $fcmToken")
+        Log.d("MainActivity", "Last Registered Token: $lastRegisteredToken")
+        if (!fcmToken.isNullOrEmpty() && fcmToken != lastRegisteredToken) {
+            Log.d("MainActivity", "새로운 FCM 토큰 감지, InfoChannel 알림 및 서버 등록 시도")
+            InfoChannel.send(
+                this,
+                getString(R.string.fcm_token_changed_message),
+                getString(R.string.fcm_token_changed_title)
+            )
+            CoroutineScope(Dispatchers.IO).launch {
+                Log.d("MainActivity", "서버에 FCM 토큰 등록 시도: $fcmToken")
+                val fcmRepository = DeviceRepositoryImpl(this@MainActivity)
+                val result = fcmRepository.registerFcmToken(fcmToken)
+                Log.d("MainActivity", "서버 등록 결과: $result")
+                if (result) {
+                    //TODO: 기존 토큰이 있다면 서버에서 삭제하는 로직 추가 고려
+                    //TODO: 응답 DTO로부터 Device UUID 추출, FcmPrefs에 저장 고려
+                    fcmPrefs.saveLastRegisteredToken(fcmToken)
+                }
+            }
+        }
 
         webView = createConfiguredWebView()
         webView.setBackgroundColor(Color.TRANSPARENT)
