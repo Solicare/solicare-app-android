@@ -17,7 +17,7 @@ class FirebaseCloudMessageService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token received: $token")
-        FcmPrefs(applicationContext).saveFcmToken(token)
+        FcmPrefs(applicationContext).saveToken(token)
         // 서버 등록 및 InfoChannel 알림은 Activity 등에서 권한 허용 후 처리
     }
 

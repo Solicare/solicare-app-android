@@ -11,4 +11,14 @@ class DevicePrefs(context: Context) {
     }
 
     fun getPhoneNumber(): String? = prefs.getString("phoneNumber", null)
+
+    fun saveDeviceUuid(uuid: String) {
+        prefs.edit { putString("deviceUuid", uuid) }
+    }
+
+    fun getDeviceUuid(): String? = prefs.getString("deviceUuid", null)
+
+    fun clear() {
+        prefs.edit { clear() }
+    }
 }

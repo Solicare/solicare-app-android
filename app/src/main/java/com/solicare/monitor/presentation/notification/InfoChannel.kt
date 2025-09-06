@@ -21,8 +21,8 @@ object InfoChannel {
 
     fun send(
         context: Context,
-        message: String,
         title: String,
+        message: String,
         iconResId: Int = R.drawable.ic_notification_info
     ) {
         val notificationManager =

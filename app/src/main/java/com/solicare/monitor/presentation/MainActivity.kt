@@ -132,30 +132,7 @@ class MainActivity : AppCompatActivity() {
         userPrefs = UserPrefs(this)
         devicePrefs = DevicePrefs(this)
 
-        // FCM 토큰 서버 등록 로직
-        val fcmToken = fcmPrefs.getFcmToken()
-        val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
-        Log.d("MainActivity", "FCM Token: $fcmToken")
-        Log.d("MainActivity", "Last Registered Token: $lastRegisteredToken")
-        if (!fcmToken.isNullOrEmpty() && fcmToken != lastRegisteredToken) {
-            Log.d("MainActivity", "새로운 FCM 토큰 감지, InfoChannel 알림 및 서버 등록 시도")
-            InfoChannel.send(
-                this,
-                getString(R.string.fcm_token_changed_message),
-                getString(R.string.fcm_token_changed_title)
-            )
-            CoroutineScope(Dispatchers.IO).launch {
-                Log.d("MainActivity", "서버에 FCM 토큰 등록 시도: $fcmToken")
-                val fcmRepository = DeviceRepositoryImpl(this@MainActivity)
-                val result = fcmRepository.registerFcmToken(fcmToken)
-                Log.d("MainActivity", "서버 등록 결과: $result")
-                if (result) {
-                    //TODO: 기존 토큰이 있다면 서버에서 삭제하는 로직 추가 고려
-                    //TODO: 응답 DTO로부터 Device UUID 추출, FcmPrefs에 저장 고려
-                    fcmPrefs.saveLastRegisteredToken(fcmToken)
-                }
-            }
-        }
+        registerDevice()
 
         webView = createConfiguredWebView()
         webView.setBackgroundColor(Color.TRANSPARENT)
@@ -185,6 +162,56 @@ class MainActivity : AppCompatActivity() {
                 webView.goBack()
             } else {
                 finish()
+            }
+        }
+    }
+
+    private fun registerDevice() {
+        val deviceUuid = devicePrefs.getDeviceUuid()
+        val currentToken = fcmPrefs.getToken()
+        val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
+        Log.d("DeviceRegister", "Device UUID: $deviceUuid")
+        Log.d("DeviceRegister", "Current FCM Token: $currentToken")
+        Log.d("DeviceRegister", "Last Registered Token: $lastRegisteredToken")
+
+        if (currentToken != lastRegisteredToken && !currentToken.isNullOrEmpty()) {
+            Log.d("DeviceRegister", "FCM 토큰 변경 감지, InfoChannel 알림")
+            InfoChannel.send(
+                this,
+                getString(R.string.fcm_token_changed_title),
+                getString(R.string.fcm_token_changed_message),
+            )
+
+            if (deviceUuid.isNullOrEmpty()) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    Log.d("DeviceRegister", "서버에 FCM 토큰 등록 시도: $currentToken")
+                    val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
+                    val result = currentToken.let { deviceRepository.registerFcmToken(it) }
+                    if (!result.isNullOrEmpty()) {
+                        devicePrefs.saveDeviceUuid(result)
+                        fcmPrefs.saveLastRegisteredToken(currentToken)
+                        InfoChannel.send(
+                            this@MainActivity,
+                            getString(R.string.device_register_title),
+                            getString(R.string.device_register_success)
+                        )
+                    } else {
+                        InfoChannel.send(
+                            this@MainActivity,
+                            getString(R.string.device_register_title),
+                            getString(R.string.device_register_fail)
+                        )
+                    }
+                }
+            } else {
+                CoroutineScope(Dispatchers.IO).launch {
+                    Log.d("DeviceRegister", "서버에 FCM 토큰 갱신 시도: $currentToken")
+                    val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
+                    val result =
+                        deviceRepository.renewFcmToken(lastRegisteredToken ?: "", currentToken)
+                    if (result)
+                        fcmPrefs.saveLastRegisteredToken(currentToken)
+                }
             }
         }
     }

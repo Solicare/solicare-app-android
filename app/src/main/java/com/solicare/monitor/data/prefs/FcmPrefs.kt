@@ -6,12 +6,12 @@ import androidx.core.content.edit
 class FcmPrefs(context: Context) {
     private val prefs = context.getSharedPreferences("FCMPrefs", Context.MODE_PRIVATE)
 
-    fun saveFcmToken(token: String) {
-        prefs.edit { putString("fcm_token", token) }
+    fun saveToken(token: String) {
+        prefs.edit { putString("token", token) }
         saveRegistrationDate(System.currentTimeMillis())
     }
 
-    fun getFcmToken(): String? = prefs.getString("fcm_token", null)
+    fun getToken(): String? = prefs.getString("token", null)
 
     fun saveRegistrationDate(timestamp: Long) {
         prefs.edit { putLong("registration_date", timestamp) }

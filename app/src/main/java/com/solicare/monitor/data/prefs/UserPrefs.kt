@@ -12,11 +12,11 @@ class UserPrefs(context: Context) {
 
     fun getJwtToken(): String? = prefs.getString("jwt_token", null)
 
-    fun saveId(id: String) {
-        prefs.edit { putString("id", id) }
+    fun saveEmail(id: String) {
+        prefs.edit { putString("email", id) }
     }
 
-    fun getId(): String? = prefs.getString("id", null)
+    fun getEmail(): String? = prefs.getString("email", null)
 
     fun savePassword(password: String) {
         prefs.edit { putString("pw", password) }
