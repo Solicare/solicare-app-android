@@ -14,7 +14,7 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
         val response = HttpJsonHelper.putJsonWithoutAuth("$baseUrl/$token", null)
         Log.d("DeviceRepository", "registerFcmToken: $response")
         if (response?.optBoolean("isSuccess", false) == true) {
-            return response.optJSONObject("result")?.optJSONObject("response")?.optString("uuid")
+            return response.optJSONObject("body")?.optString("uuid")
         }
         return ""
     }
