@@ -2,17 +2,18 @@ package com.solicare.monitor.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.solicare.monitor.BuildConfig
 import com.solicare.monitor.data.remote.HttpJsonHelper
 import com.solicare.monitor.domain.repository.DeviceRepository
 import com.solicare.monitor.presentation.notification.InfoChannel
 
 class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
-    private val baseUrl =
-        (System.getenv("BASE_URL") ?: "https://dev-api.solicare.kro.kr") + "/api/firebase/fcm"
+    private val loggingTag = "DeviceRepositoryImpl"
+    private val baseUrl = BuildConfig.BASE_API_URL + "/api"
 
     override suspend fun registerFcmToken(token: String): String? {
-        val response = HttpJsonHelper.putJsonWithoutAuth("$baseUrl/$token", null)
-        Log.d("DeviceRepository", "registerFcmToken: $response")
+        val response = HttpJsonHelper.putJsonWithoutAuth("$baseUrl/firebase/fcm/$token", null)
+        Log.d(loggingTag, "registerFcmToken: $response")
         if (response?.optBoolean("isSuccess", false) == true) {
             return response.optJSONObject("body")?.optString("uuid")
         }
@@ -22,10 +23,10 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
     override suspend fun renewFcmToken(oldToken: String, newToken: String): Boolean {
         val jsonBody = org.json.JSONObject(mapOf("oldToken" to oldToken, "newToken" to newToken))
         val response = HttpJsonHelper.postJsonWithoutAuth(
-            "$baseUrl/renew",
+            "$baseUrl/firebase/fcm/renew",
             jsonBody
         )
-        Log.d("DeviceRepository", "renewFcmToken: $response")
+        Log.d(loggingTag, "renewFcmToken: $response")
         val isSuccess = response?.optBoolean("isSuccess", false) == true
         if (isSuccess) {
             InfoChannel.send(
@@ -44,7 +45,7 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
     }
 
     override suspend fun unregisterFcmToken(token: String): Boolean {
-        val response = HttpJsonHelper.deleteJsonWithoutAuth("$baseUrl/$token")
+        val response = HttpJsonHelper.deleteJsonWithoutAuth("$baseUrl/firebase/fcm/$token")
         val isSuccess = response?.optBoolean("isSuccess", false) == true
         InfoChannel.register(context)
         if (isSuccess) {
@@ -61,5 +62,19 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
             )
         }
         return isSuccess
+    }
+
+    override suspend fun linkDeviceToMember(
+        accessToken: String,
+        memberUuid: String,
+        deviceUuid: String,
+    ): Boolean {
+        val response = HttpJsonHelper.putJsonWithAuth(
+            "$baseUrl/member/${memberUuid}/devices/${deviceUuid}",
+            org.json.JSONObject(),
+            accessToken
+        )
+        Log.d(loggingTag, "linkDeviceToMember: $response")
+        return response?.optBoolean("isSuccess", false) == true
     }
 }

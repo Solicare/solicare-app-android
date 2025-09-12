@@ -46,6 +46,12 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            buildConfigField("String", "BASE_URL", "\"https://www.solicare.kro.kr\"")
+            buildConfigField("String", "BASE_API_URL", "\"https://api.solicare.kro.kr\"")
+        }
+        debug {
+            buildConfigField("String", "BASE_URL", "\"https://dev-www.solicare.kro.kr\"")
+            buildConfigField("String", "BASE_API_URL", "\"https://dev-api.solicare.kro.kr\"")
         }
     }
     compileOptions {
@@ -53,6 +59,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
+        buildConfig = true
         compose = true
         viewBinding = true
     }

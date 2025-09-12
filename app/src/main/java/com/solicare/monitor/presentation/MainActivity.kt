@@ -26,11 +26,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.solicare.monitor.BuildConfig
 import com.solicare.monitor.R
 import com.solicare.monitor.data.prefs.DevicePrefs
 import com.solicare.monitor.data.prefs.FcmPrefs
 import com.solicare.monitor.data.prefs.UserPrefs
 import com.solicare.monitor.data.repository.DeviceRepositoryImpl
+import com.solicare.monitor.domain.util.JwtUtils
 import com.solicare.monitor.presentation.dialog.OneButtonDialog
 import com.solicare.monitor.presentation.dialog.TwoButtonDialog
 import com.solicare.monitor.presentation.notification.AlertChannel
@@ -41,7 +43,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private val baseUrl = "https://www.solicare.kro.kr/"
+    private val loggingTag = "MainActivity"
+    private val baseUrl = BuildConfig.BASE_URL + "/"
 
     private lateinit var webView: WebView
     private lateinit var fcmPrefs: FcmPrefs
@@ -60,6 +63,8 @@ class MainActivity : AppCompatActivity() {
         }
         list.toTypedArray()
     }
+
+    private var isLinkingDevice = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -170,12 +175,12 @@ class MainActivity : AppCompatActivity() {
         val deviceUuid = devicePrefs.getDeviceUuid()
         val currentToken = fcmPrefs.getToken()
         val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
-        Log.d("DeviceRegister", "Device UUID: $deviceUuid")
-        Log.d("DeviceRegister", "Current FCM Token: $currentToken")
-        Log.d("DeviceRegister", "Last Registered Token: $lastRegisteredToken")
+        Log.d(loggingTag, "Device UUID: $deviceUuid")
+        Log.d(loggingTag, "Current FCM Token: $currentToken")
+        Log.d(loggingTag, "Last Registered Token: $lastRegisteredToken")
 
         if (currentToken != lastRegisteredToken && !currentToken.isNullOrEmpty()) {
-            Log.d("DeviceRegister", "FCM 토큰 변경 감지, InfoChannel 알림")
+            Log.d(loggingTag, "FCM 토큰 변경 감지, InfoChannel 알림")
             InfoChannel.send(
                 this,
                 getString(R.string.fcm_token_changed_title),
@@ -184,7 +189,7 @@ class MainActivity : AppCompatActivity() {
 
             if (deviceUuid.isNullOrEmpty()) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    Log.d("DeviceRegister", "서버에 FCM 토큰 등록 시도: $currentToken")
+                    Log.d(loggingTag, "서버에 FCM 토큰 등록 시도: $currentToken")
                     val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
                     val result = currentToken.let { deviceRepository.registerFcmToken(it) }
                     if (!result.isNullOrEmpty()) {
@@ -205,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 CoroutineScope(Dispatchers.IO).launch {
-                    Log.d("DeviceRegister", "서버에 FCM 토큰 갱신 시도: $currentToken")
+                    Log.d(loggingTag, "서버에 FCM 토큰 갱신 시도: $currentToken")
                     val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
                     val result =
                         deviceRepository.renewFcmToken(lastRegisteredToken ?: "", currentToken)
@@ -216,9 +221,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun linkDevice() {
+        if (devicePrefs.isDeviceLinked()) return
+        if (isLinkingDevice) {
+            Log.d(loggingTag, "이미 디바이스 연결 시도 중, 중복 요청 방지")
+            return
+        }
+        isLinkingDevice = true
+        Log.d(loggingTag, "FCM 토큰이 멤버와 미연결 상태입니다. 디바이스 연결 시도")
+
+        val deviceUuid = devicePrefs.getDeviceUuid()
+        Log.d(loggingTag, "Device UUID: $deviceUuid")
+        val memberUuid = userPrefs.getMemberUuid()
+        Log.d(loggingTag, "Member UUID: $memberUuid")
+        val accessToken = userPrefs.getJwtToken()
+        Log.d(loggingTag, "Access Token: ${accessToken?.take(10)}...")
+
+        if (deviceUuid.isNullOrEmpty() || memberUuid.isNullOrEmpty() || accessToken.isNullOrEmpty()) {
+            Log.e(loggingTag, "디바이스 연결에 필요한 정보 부족, 연결 시도 중단")
+            isLinkingDevice = false
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
+            val result = deviceRepository.linkDeviceToMember(accessToken, memberUuid, deviceUuid)
+            isLinkingDevice = false
+            if (result) {
+                devicePrefs.setDeviceLinked(true)
+            } else {
+                InfoChannel.send(
+                    this@MainActivity,
+                    getString(R.string.device_link_member_title),
+                    getString(R.string.device_link_member_fail)
+                )
+            }
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun createConfiguredWebView(): WebView {
         return WebView(this).apply {
+            // useExternalFCMToken 쿠키 항상 설정
+            val cookieManager = android.webkit.CookieManager.getInstance()
+            cookieManager.setAcceptCookie(true)
+            cookieManager.setCookie(baseUrl, "useExternalFCMToken=true; path=/")
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -232,14 +279,13 @@ class MainActivity : AppCompatActivity() {
             }
             webViewClient = object : WebViewClient() {
                 override fun onReceivedError(
-
                     view: WebView?,
                     request: WebResourceRequest?,
                     error: WebResourceError?
                 ) {
                     super.onReceivedError(view, request, error)
                     error?.let {
-                        Log.e("WebView Error", "Error: ${it.description}")
+                        Log.e("WebView", "Error: ${it.description}")
                     }
                 }
 
@@ -247,13 +293,52 @@ class MainActivity : AppCompatActivity() {
                     view: WebView?,
                     request: WebResourceRequest?
                 ): Boolean {
-                    request?.url?.let { view?.loadUrl(it.toString()) }
-                    return true
+                    return false
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    // accessToken 쿠키 검사 및 UserPrefs 업데이트
+                    checkAndUpdateJwtTokenFromCookie(url)
+                    // 디바이스-멤버 연결 시도
+                    linkDevice()
                 }
             }
             loadUrl(baseUrl)
         }
     }
+
+    // accessToken 쿠키를 읽어 UserPrefs와 비교 후 업데이트
+    private fun checkAndUpdateJwtTokenFromCookie(url: String?) {
+        if (url == null) return
+        val cookieManager = android.webkit.CookieManager.getInstance()
+        val cookies = cookieManager.getCookie(url) ?: return
+        Log.d("WebView", "Cookies for $url: $cookies")
+        val accessToken = cookies.split(";")
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("accessToken=") }
+            ?.substringAfter("=")
+        if (!accessToken.isNullOrEmpty()) {
+            val savedToken = userPrefs.getJwtToken()
+            if (savedToken != accessToken) {
+                Log.d("WebView", "accessToken(JWT) 변경 감지: '${accessToken}'")
+                userPrefs.saveJwtToken(accessToken)
+                InfoChannel.send(
+                    this,
+                    getString(R.string.jwt_token_changed_title),
+                    getString(R.string.jwt_token_changed_message)
+                )
+                val memberUuid = JwtUtils.extractUserUuidFromJwt(accessToken)
+                if (!memberUuid.isNullOrEmpty()) {
+                    userPrefs.saveMemberUuid(memberUuid)
+                    Log.d("WebView", "Member UUID 추출 및 저장: $memberUuid")
+                } else {
+                    Log.e("WebView", "JWT에서 Member UUID 추출 실패")
+                }
+            }
+        }
+    }
+
 
     private fun handlePermissionDenied() {
         val deniedPermissions = permissionHelper.getLastDeniedPermissions()

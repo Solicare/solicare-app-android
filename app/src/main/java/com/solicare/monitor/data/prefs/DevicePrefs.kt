@@ -5,6 +5,12 @@ import androidx.core.content.edit
 
 class DevicePrefs(context: Context) {
     private val prefs = context.getSharedPreferences("DevicePrefs", Context.MODE_PRIVATE)
+    
+    fun isDeviceLinked(): Boolean = prefs.getBoolean("isDeviceLinked", false)
+
+    fun setDeviceLinked(linked: Boolean) {
+        prefs.edit { putBoolean("isDeviceLinked", linked) }
+    }
 
     fun savePhoneNumber(phoneNumber: String) {
         prefs.edit { putString("phoneNumber", phoneNumber) }

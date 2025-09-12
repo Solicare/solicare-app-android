@@ -29,4 +29,8 @@
     <string name="device_unregister_title">등록 해제 요청 결과</string>
     <string name="device_unregister_success">디바이스 등록 해제 요청에 성공했습니다.</string>
     <string name="device_unregister_fail">디바이스 등록 해제 요청에 실패했습니다.</string>
+    <string name="device_link_member_title">디바이스-회원 연결 요청 결과</string>
+    <string name="device_link_member_fail">디바이스-회원 연결 요청에 실패했습니다.</string>
+    <string name="jwt_token_changed_title">JWT 토큰 변경</string>
+    <string name="jwt_token_changed_message">새로운 JWT 토큰을 수신하였습니다.</string>
 </resources>

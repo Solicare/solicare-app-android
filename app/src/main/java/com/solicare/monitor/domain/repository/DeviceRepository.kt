@@ -18,4 +18,10 @@ interface DeviceRepository {
      * @return true(성공), false(실패)
      */
     suspend fun unregisterFcmToken(token: String): Boolean
+
+    suspend fun linkDeviceToMember(
+        accessToken: String,
+        memberUuid: String,
+        deviceUuid: String
+    ): Boolean
 }
