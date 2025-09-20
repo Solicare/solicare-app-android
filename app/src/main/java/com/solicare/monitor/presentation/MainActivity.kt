@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun registerDevice() {
+    fun registerDevice() {
         val deviceUuid = devicePrefs.getDeviceUuid()
         val currentToken = fcmPrefs.getToken()
         val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
@@ -180,13 +180,6 @@ class MainActivity : AppCompatActivity() {
         Log.d(loggingTag, "Last Registered Token: $lastRegisteredToken")
 
         if (currentToken != lastRegisteredToken && !currentToken.isNullOrEmpty()) {
-            Log.d(loggingTag, "FCM 토큰 변경 감지, InfoChannel 알림")
-            InfoChannel.send(
-                this,
-                getString(R.string.fcm_token_changed_title),
-                getString(R.string.fcm_token_changed_message),
-            )
-
             if (deviceUuid.isNullOrEmpty()) {
                 CoroutineScope(Dispatchers.IO).launch {
                     Log.d(loggingTag, "서버에 FCM 토큰 등록 시도: $currentToken")
@@ -214,8 +207,20 @@ class MainActivity : AppCompatActivity() {
                     val deviceRepository = DeviceRepositoryImpl(this@MainActivity)
                     val result =
                         deviceRepository.renewFcmToken(lastRegisteredToken ?: "", currentToken)
-                    if (result)
+                    if (result) {
                         fcmPrefs.saveLastRegisteredToken(currentToken)
+                        InfoChannel.send(
+                            this@MainActivity,
+                            getString(R.string.device_renew_title),
+                            getString(R.string.device_renew_success)
+                        )
+                    } else {
+                        InfoChannel.send(
+                            this@MainActivity,
+                            getString(R.string.device_renew_title),
+                            getString(R.string.device_renew_fail)
+                        )
+                    }
                 }
             }
         }
@@ -323,11 +328,6 @@ class MainActivity : AppCompatActivity() {
             if (savedToken != accessToken) {
                 Log.d("WebView", "accessToken(JWT) 변경 감지: '${accessToken}'")
                 userPrefs.saveJwtToken(accessToken)
-                InfoChannel.send(
-                    this,
-                    getString(R.string.jwt_token_changed_title),
-                    getString(R.string.jwt_token_changed_message)
-                )
                 val memberUuid = JwtUtils.extractUserUuidFromJwt(accessToken)
                 if (!memberUuid.isNullOrEmpty()) {
                     userPrefs.saveMemberUuid(memberUuid)

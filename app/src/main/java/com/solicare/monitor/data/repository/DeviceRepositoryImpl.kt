@@ -3,25 +3,30 @@ package com.solicare.monitor.data.repository
 import android.content.Context
 import android.util.Log
 import com.solicare.monitor.BuildConfig
+import com.solicare.monitor.R
 import com.solicare.monitor.data.remote.HttpJsonHelper
 import com.solicare.monitor.domain.repository.DeviceRepository
 import com.solicare.monitor.presentation.notification.InfoChannel
+import org.json.JSONObject
 
 class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
     private val loggingTag = "DeviceRepositoryImpl"
     private val baseUrl = BuildConfig.BASE_API_URL + "/api"
 
     override suspend fun registerFcmToken(token: String): String? {
-        val response = HttpJsonHelper.putJsonWithoutAuth("$baseUrl/firebase/fcm/$token", null)
+        val response = HttpJsonHelper.postJsonWithoutAuth(
+            "$baseUrl/firebase/fcm/register",
+            JSONObject(mapOf("token" to token))
+        )
         Log.d(loggingTag, "registerFcmToken: $response")
         if (response?.optBoolean("isSuccess", false) == true) {
             return response.optJSONObject("body")?.optString("uuid")
         }
-        return ""
+        return null
     }
 
     override suspend fun renewFcmToken(oldToken: String, newToken: String): Boolean {
-        val jsonBody = org.json.JSONObject(mapOf("oldToken" to oldToken, "newToken" to newToken))
+        val jsonBody = JSONObject(mapOf("oldToken" to oldToken, "newToken" to newToken))
         val response = HttpJsonHelper.postJsonWithoutAuth(
             "$baseUrl/firebase/fcm/renew",
             jsonBody
@@ -31,14 +36,14 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
         if (isSuccess) {
             InfoChannel.send(
                 context,
-                context.getString(com.solicare.monitor.R.string.device_renew_title),
-                context.getString(com.solicare.monitor.R.string.device_renew_success)
+                context.getString(R.string.device_renew_title),
+                context.getString(R.string.device_renew_success)
             )
         } else {
             InfoChannel.send(
                 context,
-                context.getString(com.solicare.monitor.R.string.device_renew_title),
-                context.getString(com.solicare.monitor.R.string.device_renew_fail),
+                context.getString(R.string.device_renew_title),
+                context.getString(R.string.device_renew_fail),
             )
         }
         return response?.optBoolean("isSuccess", false) == true
@@ -51,14 +56,14 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
         if (isSuccess) {
             InfoChannel.send(
                 context,
-                context.getString(com.solicare.monitor.R.string.device_unregister_title),
-                context.getString(com.solicare.monitor.R.string.device_unregister_success)
+                context.getString(R.string.device_unregister_title),
+                context.getString(R.string.device_unregister_success)
             )
         } else {
             InfoChannel.send(
                 context,
-                context.getString(com.solicare.monitor.R.string.device_unregister_title),
-                context.getString(com.solicare.monitor.R.string.device_unregister_fail),
+                context.getString(R.string.device_unregister_title),
+                context.getString(R.string.device_unregister_fail),
             )
         }
         return isSuccess
@@ -70,8 +75,8 @@ class DeviceRepositoryImpl(private val context: Context) : DeviceRepository {
         deviceUuid: String,
     ): Boolean {
         val response = HttpJsonHelper.putJsonWithAuth(
-            "$baseUrl/member/${memberUuid}/devices/${deviceUuid}",
-            org.json.JSONObject(),
+            "$baseUrl/push/member/${memberUuid}/devices/${deviceUuid}",
+            JSONObject(),
             accessToken
         )
         Log.d(loggingTag, "linkDeviceToMember: $response")
