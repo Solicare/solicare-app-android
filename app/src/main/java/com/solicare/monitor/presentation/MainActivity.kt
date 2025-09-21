@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun registerDevice() {
+    private fun registerDevice() {
         val deviceUuid = devicePrefs.getDeviceUuid()
         val currentToken = fcmPrefs.getToken()
         val lastRegisteredToken = fcmPrefs.getLastRegisteredToken()
@@ -338,7 +338,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private fun handlePermissionDenied() {
         val deniedPermissions = permissionHelper.getLastDeniedPermissions()
